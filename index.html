@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OTP Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    input, button {
+      padding: 10px;
+      margin: 8px;
+      width: 250px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+    input {
+      background: #333;
+      color: #fff;
+    }
+    button {
+      background-color: crimson;
+      color: white;
+      cursor: pointer;
+    }
+    #recaptcha-container {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Login via OTP 🔐</h2>
+  
+  <div id="login-section">
+    <input type="tel" id="phoneNumber" placeholder="+91XXXXXXXXXX" />
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">Send OTP</button>
+  </div>
+
+  <div id="otp-section" style="display:none;">
+    <input type="text" id="otpCode" placeholder="Enter OTP" />
+    <button onclick="verifyOTP()">Verify OTP</button>
+  </div>
+
+  <p id="message"></p>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFbwTesx_LvUevJsO6VSUGbKUOmOfVLUA",
+      authDomain: "search-page-59af4.firebaseapp.com",
+      databaseURL: "https://search-page-59af4-default-rtdb.firebaseio.com",
+      projectId: "search-page-59af4",
+      storageBucket: "search-page-59af4.appspot.com",
+      messagingSenderId: "627269108316",
+      appId: "1:627269108316:web:80c57390d850fda15a9c99",
+      measurementId: "G-K91XW4NBP7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    let confirmationResult;
+
+    window.sendOTP = function () {
+      const phoneNumber = document.getElementById("phoneNumber").value;
+      if (!phoneNumber.startsWith("+91")) {
+        document.getElementById("message").innerText = "Use full number with +91";
+        return;
+      }
+
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'normal',
+        callback: () => {
+          signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier)
+            .then((result) => {
+              confirmationResult = result;
+              document.getElementById("login-section").style.display = "none";
+              document.getElementById("otp-section").style.display = "block";
+              document.getElementById("message").innerText = "OTP sent ✔️";
+            })
+            .catch((error) => {
+              console.error(error);
+              document.getElementById("message").innerText = "Error sending OTP ❌";
+            });
+        }
+      });
+
+      recaptchaVerifier.render();
+    };
+
+    window.verifyOTP = function () {
+      const code = document.getElementById("otpCode").value;
+      confirmationResult.confirm(code).then((result) => {
+        const user = result.user;
+        document.getElementById("message").innerText = `Login successful 👋 Welcome ${user.phoneNumber}`;
+      }).catch((error) => {
+        console.error(error);
+        document.getElementById("message").innerText = "Invalid OTP ❌";
+      });
+    };
+  </script>
+</body>
+</html>
